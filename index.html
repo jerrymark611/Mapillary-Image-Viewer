@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Search images</title>
+    <meta charset="utf-8">
+
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
+    <script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
+    <style>
+      .map {
+        height: 100%;
+        width: 100%;
+      }
+
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+  </head>
+  <body>
+    <div class="container-fluid h-100">
+      <div class="row">
+        <div class="col-sm-9 col-md-6 col-lg-8" style="background-color:white;">
+          <div id="map" class="map"></div>
+        </div>
+
+        <div class="col-sm-3 col-md-6 col-lg-4" style="background-color:white;">
+          <div>Input sequence id you're interested you get from <a href="https://www.mapillary.com/app/"target="_blank" rel="noopener noreferrer">Mapillary Website</a></div>
+              <br>
+              <form  name="form1">
+                <a id="get_token" href="https://www.mapillary.com/connect?client_id=4996748710342229" target="_blank">Get access token</a>
+                <br><br>
+
+                <label for="access_token_box">Access token:</label>
+                <input type="text" id="access_token_box"name="fname" value="">
+                <br><br>
+
+                <label for="id_box">Sequence id:</label>
+                <input type="text" id="id_box"name="fname" value="2dtxWrzJfY5psaO3ecuyL1">
+                <br><br>
+
+                <a id="download" href="" target="_blank">Download sequence</a>
+              </form>
+          <br>
+          <label >Latitude:</label>
+          <label id="latitude"></label>
+          <br>
+          <label>Longitude:</label>
+          <label id="longitude"></label>
+
+        </div>
+      </div>
+    </div>
+    <script>
+    // 加入 OSM 的圖層
+    // var raster = new ol.layer.Tile({
+    //   source: new ol.source.OSM()
+    // });
+
+    // 宣告資料物件(也就是你等下畫的圖形，在地圖上通稱「圖徵(Features)」))
+    // var drawSource = new ol.source.Vector({wrapX: false});
+
+    // 加入向量圖層，資料來源則是剛剛建立的 drawSource
+    // var vector = new ol.layer.Vector({
+    //   source: drawSource
+    // });
+
+
+    // const iconFeature = new ol.Feature({
+    // geometry: new ol.geom.Point(ol.proj.fromLonLat([-2, 53])),
+    //   name: 'Somewhere near Nottingham',
+    // });
+
+    const map = new ol.Map({
+      target: 'map',
+      layers: [
+        new ol.layer.Tile({
+          source: new ol.source.OSM(),
+        }),
+        new ol.layer.Vector({
+          source: new ol.source.Vector({
+            // features: [iconFeature]
+          }),
+          style: new ol.style.Style({
+            image: new ol.style.Icon({
+              anchor: [0, 0],
+              anchorXUnits: 'fraction',
+              anchorYUnits: 'pixels',
+              src: 'https://openlayers.org/en/latest/examples/data/icon.png'
+            })
+          })
+        })
+      ],
+      view: new ol.View({
+        center: ol.proj.fromLonLat([120, 23.5]),
+        zoom: 6
+      })
+    });
+
+    map.on('singleclick', function (evt) {
+        var latitude = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326')[0];
+        var longitude = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326')[1];
+        document.getElementById("latitude").innerHTML = latitude;
+        document.getElementById("longitude").innerHTML = longitude;
+
+    });
+
+    const token_change = document.getElementById('access_token_box');
+    token_change.addEventListener('input', updateValue);
+
+    const id_change = document.getElementById('id_box');
+    id_change.addEventListener('input', updateValue);
+
+
+    // var oform = document.forms["form1"];
+    function change_value(){
+      const access_token = document.getElementById("access_token_box").value;
+      const id = document.getElementById("id_box").value;
+      document.getElementById("download").href="/api?sequence_id="+id+"&access_token="+access_token;
+    }
+    function updateValue(e) {
+      change_value()
+    }
+      change_value()
+    </script>
+  </body>
+</html>
