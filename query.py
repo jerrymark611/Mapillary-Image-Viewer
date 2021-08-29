@@ -1,6 +1,5 @@
 # %%
-import os
-import mercantile, requests, json
+import mercantile, requests
 from vt2geojson.tools import vt_bytes_to_geojson
 from math import sin, cos, asin, sqrt, radians
 

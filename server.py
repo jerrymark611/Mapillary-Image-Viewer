@@ -1,13 +1,8 @@
 # %%
-import os
-from fastapi import FastAPI, Request, Response, status
-import httpx
+import requests
+from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
-from starlette.responses import RedirectResponse, HTMLResponse
-from sqlalchemy.orm import Session
-
-from fastapi_utils.session import FastAPISessionMaker
-from fastapi_utils.tasks import repeat_every
+from starlette.responses import RedirectResponse
 from query import *
 
 # %%
@@ -23,7 +18,7 @@ def get_access_token(authorization_code: str, old_access_token:str = None):
         data = {"grant_type": "authorization_code", "client_id": "4996748710342229", "refresh_token": old_access_token}
         
 
-    r = httpx.post('https://graph.mapillary.com/token', data=data, headers=header)
+    r = requests.post('https://graph.mapillary.com/token', data=data, headers=header)
 
     try:
         new_app_access_token = r.json()['access_token']
