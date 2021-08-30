@@ -6,8 +6,8 @@ from starlette.responses import RedirectResponse
 from query import *
 
 # %%
-client_secret = "MLY|4996748710342229|df37ea75c385590184f067f78962be3a"
-client_id = "4996748710342229"
+client_secret = <CLIENT-SECRET>
+client_id = <CLIENT-ID>
 
 app = FastAPI()
 templates = Jinja2Templates(directory=".")
