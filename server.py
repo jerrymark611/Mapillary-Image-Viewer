@@ -10,7 +10,7 @@ app = FastAPI()
 templates = Jinja2Templates(directory=".")
 
 def get_access_token(authorization_code: str, old_access_token:str = None):
-    
+    # replace client secret and clinet id with yours
     header = {"Content-Type": "application/json", "Authorization": "OAuth MLY|4996748710342229|df37ea75c385590184f067f78962be3a"}
     if not old_access_token:
         data = {"grant_type": "authorization_code", "client_id": "4996748710342229", 'code': authorization_code}
