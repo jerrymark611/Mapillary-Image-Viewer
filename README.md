@@ -25,4 +25,5 @@ Windows 10
 ## TODO
 - Click to get the nearest image from Mapillary
 - Increase image resolution
-- Add marker of images available on the map
+- Add markers of image available on the map
+- Add a marker of the position clicked
