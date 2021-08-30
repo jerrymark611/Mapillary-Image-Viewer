@@ -44,6 +44,7 @@
         </div>
       </div>
       <h3>Drop GeoJSON to render it on the map</h3>
+      <h3 id="hint"></h3>
     </div>
 
     <!-- 需要 access_token 才能 query, 暫時放在這 -->
@@ -57,18 +58,18 @@
             new ol.layer.Tile({
               source: new ol.source.OSM()
             }),
-            new ol.layer.Vector({
-              source: new ol.source.Vector({
-              }),
-              style: new ol.style.Style({
-                image: new ol.style.Icon({
-                  anchor: [0, 0],
-                  anchorXUnits: 'fraction',
-                  anchorYUnits: 'pixels',
-                  src: 'https://openlayers.org/en/latest/examples/data/icon.png'
-                })
-              })
-            })
+            // new ol.layer.Vector({
+            //   source: new ol.source.Vector({
+            //   }),
+            //   style: new ol.style.Style({
+            //     image: new ol.style.Icon({
+            //       anchor: [0, 0],
+            //       anchorXUnits: 'fraction',
+            //       anchorYUnits: 'pixels',
+            //       src: 'https://openlayers.org/en/latest/examples/data/icon.png'
+            //     })
+            //   })
+            // })
           ],
           view: new ol.View({
             center: ol.proj.fromLonLat([121, 23.5]),
@@ -102,8 +103,14 @@
                     "type": "equirectangular",
                     "panorama": b
                 
-              });
+              }
+              );
               v.loadScene('test', 0, 0, 60);
+              document.getElementById("hint").innerHTML = "";
+
+              }
+              else{
+                document.getElementById("hint").innerHTML = "Try other positions,  no panoramic images close to the position you click";
               }
             }
             getJSON('api?lon=' + longitude + "&lat=" + latitude + "&access_token=" + access_token)
