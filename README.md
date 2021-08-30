@@ -23,6 +23,5 @@ Operation:
 ## Test Environment
 Windows 10
 ## TODO
-- Click to get the nearest image from Mapillary
 - Increase image resolution
 - Add markers of image available on the map
