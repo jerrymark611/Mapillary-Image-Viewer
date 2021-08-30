@@ -36,7 +36,7 @@
     <div class="container-fluid h-100">
       <div class="row">
         <div class="col-sm-3 col-md-4 col-lg-4 nopadding" style="background-color:black;">
-          <div id="map" class="map"></div>
+          <div id="map" class="map"><div id="popup"> </div></div>
         </div>
 
         <div class="col-sm-5 col-md-8 col-lg-8 nopadding" style="background-color:white;">
@@ -51,86 +51,124 @@
     <span id="access_token" style="color:white;">{{ access_token }}</span>
 
     <script>
+      // var Icon = ol.style.Icon;
+      var vectorLayer = undefined;
+      function get_icon_layer(position)
+      {
+        var iconFeature = new ol.Feature({
+          geometry: new ol.geom.Point(ol.proj.fromLonLat(position)),
+          name: 'Null Island',
+        });
+
+      
+        var iconStyle = new ol.style.Style({
+          image: new ol.style.Icon({
+            anchor: [0.5, 48],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'pixels',
+            src: 'https://openlayers.org/en/latest/examples/data/icon.png',
+          }),
+        });
+      
+        iconFeature.setStyle(iconStyle);
+
+        var vectorLayer = new ol.layer.Vector({
+          source: new ol.source.Vector({
+          features: [iconFeature],
+          }),
+        });
+        return vectorLayer;
+      }
+
       var access_token = document.getElementById('access_token').innerHTML
       const map = new ol.Map({
           target: 'map',
           layers: [
             new ol.layer.Tile({
               source: new ol.source.OSM()
-            }),
-            // new ol.layer.Vector({
-            //   source: new ol.source.Vector({
-            //   }),
-            //   style: new ol.style.Style({
-            //     image: new ol.style.Icon({
-            //       anchor: [0, 0],
-            //       anchorXUnits: 'fraction',
-            //       anchorYUnits: 'pixels',
-            //       src: 'https://openlayers.org/en/latest/examples/data/icon.png'
-            //     })
-            //   })
-            // })
+            })
           ],
           view: new ol.View({
             center: ol.proj.fromLonLat([121, 23.5]),
-            zoom: 7
+            zoom: 2
           })
         });
         
-        var v = pannellum.viewer('panorama', { 'scenes': [], 'autoLoad': true, 'showFullscreenCtrl': false, 'showZoomCtrl': false });
-        v.addScene('test', {
-            "type": "equirectangular",
-            "panorama": "https://scontent.ftpe3-1.fna.fbcdn.net/m1/v/t6/An_Wo1mwLrV8ZuX9cHPR0LjBF26dRDiwKNHIUS7xdxo9bYLopPCsJtUT9pWX4coWsqnMbeV0XZJcD0oP2YF9E4b7uuyY1yc5O6S-0wkvkOUE-S5kdLBjffEeAGicmJlWx8OMlCQQHTEWilJJ8vUcIA?stp=s2048x1024&ccb=10-5&oh=e1059560357c39d46c2b9689c95a92a7&oe=612F6DD4&_nc_sid=122ab1",
-            "compass": true,
-            "northOffset": 247.5,
-            // "yaw": 0,
-            // "northOffset": 247.5
-          });
-        v.loadScene('test', 0, 0, 60);
-        
-        // Click map to find closest image to the point
-        map.on('singleclick', function (evt) {
-            var longitude = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326')[0];
-            var latitude = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326')[1];
-            
-           
-            let getJSON = async(url) => {
-              let response = await fetch(url);
-              let b = await response.json();
-              if (b != null){
-                v.removeScene('test');
-                v.addScene('test', {
-                    "type": "equirectangular",
-                    "panorama": b
-                
-              }
-              );
-              v.loadScene('test', 0, 0, 60);
-              document.getElementById("hint").innerHTML = "";
+      // const element = document.getElementById('popup');
 
-              }
-              else{
-                document.getElementById("hint").innerHTML = "Try other positions,  no panoramic images close to the position you click";
-              }
-            }
-            getJSON('api?lon=' + longitude + "&lat=" + latitude + "&access_token=" + access_token)
-          });
+      // const popup = new ol.Overlay({
+      //   element: element,
+      //   positioning: 'bottom-center',
+      //   stopEvent: false,
+      // });
+      // map.addOverlay(popup);
 
-
-        function wrapLon(value) {
-          var worlds = Math.floor((value + 180) / 360);
-          return value - (worlds * 360);
+      var v = pannellum.viewer('panorama', { 'scenes': [], 'autoLoad': true, 'showFullscreenCtrl': false, 'showZoomCtrl': false });
+      v.addScene('test', {
+          "type": "equirectangular",
+          "panorama": "https://scontent.ftpe3-1.fna.fbcdn.net/m1/v/t6/An_Wo1mwLrV8ZuX9cHPR0LjBF26dRDiwKNHIUS7xdxo9bYLopPCsJtUT9pWX4coWsqnMbeV0XZJcD0oP2YF9E4b7uuyY1yc5O6S-0wkvkOUE-S5kdLBjffEeAGicmJlWx8OMlCQQHTEWilJJ8vUcIA?stp=s2048x1024&ccb=10-5&oh=e1059560357c39d46c2b9689c95a92a7&oe=612F6DD4&_nc_sid=122ab1",
+          "compass": true,
+        });
+      v.loadScene('test', 0, 0, 60);
+      
+      // Click map to find closest image to the point
+      map.on('singleclick', function (evt) {
+        // move icon
+        var position = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
+        if(vectorLayer != undefined){
+          map.removeLayer(vectorLayer);
         }
+
+        vectorLayer = get_icon_layer(position);
+        map.addLayer(vectorLayer);
+        
+        var longitude = position[0];
+        var latitude = position[1];
+        
+        let getJSON = async(url) => {
+          let response = await fetch(url);
+          let b = await response.json();
+          if (b != null){
+            v.removeScene('test');
+            v.addScene('test', {
+                "type": "equirectangular",
+                "panorama": b,
+          }
+          );
+          v.loadScene('test', 0, 0, 60);
+          document.getElementById("hint").innerHTML = "";
+
+          }
+          else{
+            document.getElementById("hint").innerHTML = "Try other positions,  no panoramic images close to the position you click";
+          }
+        }
+        getJSON('api?lon=' + longitude + "&lat=" + latitude + "&access_token=" + access_token)
+      });
+
+        // function wrapLon(value) {
+        //   var worlds = Math.floor((value + 180) / 360);
+        //   return value - (worlds * 360);
+        // }
         
         // Get boundary of the map
         // map.on('moveend', function (evt) {
-        //   var extent = map.getView().calculateExtent(map.getSize());
-        //   var bottomLeft = ol.proj.transform(ol.extent.getBottomLeft(extent),
-        //       'EPSG:3857', 'EPSG:4326');
-        //   var topRight = ol.proj.transform(ol.extent.getTopRight(extent),
-        //       'EPSG:3857', 'EPSG:4326');
+          // var extent = map.getView().calculateExtent(map.getSize());
+          // var bottomLeft = ol.proj.transform(ol.extent.getBottomLeft(extent),
+          //     'EPSG:3857', 'EPSG:4326');
+          // var topRight = ol.proj.transform(ol.extent.getTopRight(extent),
+          //     'EPSG:3857', 'EPSG:4326');
         // });
         
+        // map.on('pointermove', function (e) {
+        //   const pixel = map.getEventPixel(e.originalEvent);
+        //   const hit = map.hasFeatureAtPixel(pixel);
+        //   map.getTarget().style.cursor = hit ? 'pointer' : '';
+        // });
+        // Close the popup when the map is moved
+        // map.on('movestart', function () {
+        //   $(element).popover('dispose');
+        // });
         // Rendor geojson
         let dragAndDropInteraction;
 
