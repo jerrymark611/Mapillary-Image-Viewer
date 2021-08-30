@@ -9,7 +9,7 @@
 - Jinja2
 
 ## Usage
-Run the command below to start the server
+Download this repository and run the command below to start the server
 ```
 uvicorn server:app --reload --port 8080
 ```
