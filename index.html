@@ -20,13 +20,35 @@
         margin: 0 !important;
       }
 
+      #controls {
+        position: absolute;
+        bottom: 0;
+        z-index: 2;
+        text-align: center;
+        width: 100%;
+        padding-bottom: 3px;
+      }
+      .ctrl {
+          padding: 8px 5px;
+          width: 30px;
+          text-align: center;
+          background: rgba(200, 200, 200, 0.8);
+          display: inline-block;
+          cursor: pointer;
+      }
+      .ctrl:hover {
+          background: rgba(200, 200, 200, 1);
+      }
+
     </style>
     <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
-    
     <script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
 
@@ -35,15 +57,31 @@
   <body>
     <div class="container-fluid h-100">
       <div class="row">
-        <div class="col-sm-3 col-md-4 col-lg-4 nopadding" style="background-color:black;">
+        <div class="col-sm-3 col-md-4 col-lg-4 nopadding" style="background-color:white;">
           <div id="map" class="map"><div id="popup"> </div></div>
         </div>
 
         <div class="col-sm-5 col-md-8 col-lg-8 nopadding" style="background-color:white;">
-           <div id="panorama"></div>
+          <div id="panorama">
+            <div id="controls">
+                <div class="ctrl" id="pan-left">&#9664;</div>
+                <div class="ctrl" id="pan-right">&#9654;</div>
+                <div class="ctrl" id="zoom-in">&plus;</div>
+                <div class="ctrl" id="zoom-out">&minus;</div>
+                <div class="ctrl" id="fullscreen">&#x2922;</div>
+            </div>
+          </div>
         </div>
       </div>
-      <h3>Drop GeoJSON to render it on the map</h3>
+      <div class="row">
+        <div class="col-sm-3 col-md-4 col-lg-4 nopadding" style="background-color:white;">
+          <button id="clear_geojson" type="button">Clear GeoJSON</button>
+        </div>
+        <div class="col-sm-5 col-md-8 col-lg-8 nopadding" style="background-color:white;">
+          <span>Image number: </span>
+          <span id="img_sign"></span>
+        </div>
+      </div>
       <h3 id="hint"></h3>
     </div>
 
@@ -51,169 +89,224 @@
     <span id="access_token" style="color:white;">{{ access_token }}</span>
 
     <script>
-      // var Icon = ol.style.Icon;
-      var vectorLayer = undefined;
-      function get_icon_layer(position)
+      var icon_vector_layer = undefined;
+      var target_vector_layer = undefined;
+      var feature_layer_list = []
+      var dot_vector_layer = undefined;
+      var metadata = undefined;
+      var access_token = document.getElementById('access_token').innerHTML
+      function get_icon_layer(position, src, scale)
       {
         var iconFeature = new ol.Feature({
           geometry: new ol.geom.Point(ol.proj.fromLonLat(position)),
           name: 'Null Island',
         });
 
-      
         var iconStyle = new ol.style.Style({
           image: new ol.style.Icon({
             anchor: [0.5, 48],
+            scale: scale, 
             anchorXUnits: 'fraction',
             anchorYUnits: 'pixels',
-            src: 'https://openlayers.org/en/latest/examples/data/icon.png',
+            src: src
           }),
         });
-      
+
         iconFeature.setStyle(iconStyle);
 
-        var vectorLayer = new ol.layer.Vector({
+        var icon_vector_layer = new ol.layer.Vector({
           source: new ol.source.Vector({
           features: [iconFeature],
           }),
         });
-        return vectorLayer;
+        return icon_vector_layer;
       }
 
-      var access_token = document.getElementById('access_token').innerHTML
       const map = new ol.Map({
-          target: 'map',
-          layers: [
-            new ol.layer.Tile({
-              source: new ol.source.OSM()
-            })
-          ],
-          view: new ol.View({
-            center: ol.proj.fromLonLat([121, 23.5]),
-            zoom: 2
+        target: 'map',
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
           })
-        });
-        
-      // const element = document.getElementById('popup');
+        ],
+        view: new ol.View({
+          center: ol.proj.fromLonLat([121, 23.5]),
+          zoom: 2
+        })
+      });
 
-      // const popup = new ol.Overlay({
-      //   element: element,
-      //   positioning: 'bottom-center',
-      //   stopEvent: false,
-      // });
-      // map.addOverlay(popup);
+      var viewer = pannellum.viewer('panorama', { 'scenes': [], 'autoLoad': true, 'showFullscreenCtrl': false, 'showZoomCtrl': false });
+      viewer.addScene('0', {
+        "type": "equirectangular",
+        "panorama": "https://scontent.ftpe3-1.fna.fbcdn.net/m1/v/t6/An_Wo1mwLrV8ZuX9cHPR0LjBF26dRDiwKNHIUS7xdxo9bYLopPCsJtUT9pWX4coWsqnMbeV0XZJcD0oP2YF9E4b7uuyY1yc5O6S-0wkvkOUE-S5kdLBjffEeAGicmJlWx8OMlCQQHTEWilJJ8vUcIA?stp=s2048x1024&ccb=10-5&oh=e1059560357c39d46c2b9689c95a92a7&oe=612F6DD4&_nc_sid=122ab1",
+        // "compass": true,
+        "showControls": false,
+        "hfov": 120
+      });
 
-      var v = pannellum.viewer('panorama', { 'scenes': [], 'autoLoad': true, 'showFullscreenCtrl': false, 'showZoomCtrl': false });
-      v.addScene('test', {
-          "type": "equirectangular",
-          "panorama": "https://scontent.ftpe3-1.fna.fbcdn.net/m1/v/t6/An_Wo1mwLrV8ZuX9cHPR0LjBF26dRDiwKNHIUS7xdxo9bYLopPCsJtUT9pWX4coWsqnMbeV0XZJcD0oP2YF9E4b7uuyY1yc5O6S-0wkvkOUE-S5kdLBjffEeAGicmJlWx8OMlCQQHTEWilJJ8vUcIA?stp=s2048x1024&ccb=10-5&oh=e1059560357c39d46c2b9689c95a92a7&oe=612F6DD4&_nc_sid=122ab1",
-          "compass": true,
+      viewer.loadScene('0');
+      var scene_ids = ['0'];
+      var current_id_index = 0;
+
+      function set_new_scenes(scenes_metadata){
+        scene_ids.forEach(function(item, index, array) {
+          viewer.removeScene(String(index));
+          scene_ids.shift();
         });
-      v.loadScene('test', 0, 0, 60);
+
+        scenes_metadata.forEach(function(item, index, array) {
+          viewer.addScene(String(index), {
+                "type": "equirectangular",
+                "panorama": item['img_url'],
+                // "compass": true,
+                "showControls": false,
+                // "northOffset": item['properties']['compass_angle'],
+                'yaw': item['degree'],
+                "hfov": 120
+              })
+            scene_ids.push(String(index))
+        });
+      }
       
-      // Click map to find closest image to the point
+      document.getElementById('pan-left').addEventListener('click', function(e) {
+        current_id_index -= 1;
+        if (current_id_index == -1)
+          current_id_index = scene_ids.length -1;
+
+        viewer.loadScene(scene_ids[current_id_index]);
+        document.getElementById('img_sign').innerHTML = (current_id_index+1) + "/" + scene_ids.length;
+        if(target_vector_layer != undefined)
+          map.removeLayer(target_vector_layer);
+        target_vector_layer = get_icon_layer(metadata[current_id_index]['geometry']['coordinates'], 
+          "https://icon-library.com/images/pin-icon-png/pin-icon-png-23.jpg", 0.109);
+        map.addLayer(target_vector_layer);
+      });
+
+      document.getElementById('pan-right').addEventListener('click', function(e) {
+        current_id_index += 1;
+        if (current_id_index == scene_ids.length)
+          current_id_index = 0;
+        viewer.loadScene(scene_ids[current_id_index]);
+        document.getElementById('img_sign').innerHTML = (current_id_index+1) + "/" + scene_ids.length;
+        if(target_vector_layer != undefined)
+          map.removeLayer(target_vector_layer);
+        target_vector_layer = get_icon_layer(metadata[current_id_index]['geometry']['coordinates'], 
+          "https://icon-library.com/images/pin-icon-png/pin-icon-png-23.jpg", 0.109);
+        map.addLayer(target_vector_layer);
+      });
+      document.getElementById('zoom-in').addEventListener('click', function(e) {
+        viewer.setHfov(viewer.getHfov() - 10);
+      });
+      document.getElementById('zoom-out').addEventListener('click', function(e) {
+        viewer.setHfov(viewer.getHfov() + 10);
+      });
+      document.getElementById('fullscreen').addEventListener('click', function(e) {
+        viewer.toggleFullscreen();
+      });
+
+      document.getElementById("clear_geojson").addEventListener("click", function() {
+        feature_layer_list.forEach(function(value, index, array){
+          map.removeLayer(value);
+        })
+      });
+
+      // Click map to get image nearby
       map.on('singleclick', function (evt) {
         // move icon
+        current_id_index = 0;
         var position = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
-        if(vectorLayer != undefined){
-          map.removeLayer(vectorLayer);
+        if(icon_vector_layer != undefined){
+          map.removeLayer(icon_vector_layer);
         }
 
-        vectorLayer = get_icon_layer(position);
-        map.addLayer(vectorLayer);
-        
-        var longitude = position[0];
-        var latitude = position[1];
+        icon_vector_layer = get_icon_layer(position, "https://openlayers.org/en/latest/examples/data/icon.png", 1);
+        map.addLayer(icon_vector_layer);
+
         
         let getJSON = async(url) => {
           let response = await fetch(url);
-          let b = await response.json();
-          if (b != null){
-            v.removeScene('test');
-            v.addScene('test', {
-                "type": "equirectangular",
-                "panorama": b,
-          }
-          );
-          v.loadScene('test', 0, 0, 60);
-          document.getElementById("hint").innerHTML = "";
+          let geojson = await response.json();
+          
+          // get metadata of images
+          if (geojson['features'].length != 0){
+            metadata = geojson['features']
+            let image_url = metadata[0]['img_url']
+            set_new_scenes(metadata)
+            viewer.loadScene(scene_ids[0])
+            if(target_vector_layer != undefined){
+              map.removeLayer(target_vector_layer);
+            }
+
+            target_vector_layer = get_icon_layer(metadata[0]['geometry']['coordinates'], 
+              "https://icon-library.com/images/pin-icon-png/pin-icon-png-23.jpg", 0.109);
+            map.addLayer(target_vector_layer);
+            document.getElementById("hint").innerHTML = "";
+            document.getElementById("img_sign").innerHTML = (current_id_index+1) + "/" + scene_ids.length;
 
           }
           else{
             document.getElementById("hint").innerHTML = "Try other positions,  no panoramic images close to the position you click";
           }
-        }
-        getJSON('api?lon=' + longitude + "&lat=" + latitude + "&access_token=" + access_token)
+      }
+      getJSON('api?lon=' + position[0] + "&lat=" + position[1] + "&access_token=" + access_token)
       });
 
-        // function wrapLon(value) {
-        //   var worlds = Math.floor((value + 180) / 360);
-        //   return value - (worlds * 360);
-        // }
-        
-        // Get boundary of the map
-        // map.on('moveend', function (evt) {
-          // var extent = map.getView().calculateExtent(map.getSize());
-          // var bottomLeft = ol.proj.transform(ol.extent.getBottomLeft(extent),
-          //     'EPSG:3857', 'EPSG:4326');
-          // var topRight = ol.proj.transform(ol.extent.getTopRight(extent),
-          //     'EPSG:3857', 'EPSG:4326');
-        // });
-        
-        // map.on('pointermove', function (e) {
-        //   const pixel = map.getEventPixel(e.originalEvent);
-        //   const hit = map.hasFeatureAtPixel(pixel);
-        //   map.getTarget().style.cursor = hit ? 'pointer' : '';
-        // });
-        // Close the popup when the map is moved
-        // map.on('movestart', function () {
-        //   $(element).popover('dispose');
-        // });
-        // Rendor geojson
-        let dragAndDropInteraction;
+      // function wrapLon(value) {
+      //   var worlds = Math.floor((value + 180) / 360);
+      //   return value - (worlds * 360);
+      // }
 
-        function setInteraction() {
-          if (dragAndDropInteraction) {
-            map.removeInteraction(dragAndDropInteraction);
-          }
-          dragAndDropInteraction = new ol.interaction.DragAndDrop({
-            formatConstructors: [
-              ol.format.GeoJSON,
-            ],
-          });
-          dragAndDropInteraction.on('addfeatures', function (event) {
-            const vectorSource = new ol.source.Vector({
-              features: event.features,
-            });
-            map.addLayer(
-              new ol.layer.Vector({
-                source: vectorSource,
-              })
-            );
-            map.getView().fit(vectorSource.getExtent());
-          });
-          map.addInteraction(dragAndDropInteraction);
+      // Get boundary of the map
+      // map.on('moveend', function (evt) {
+      //   var extent = map.getView().calculateExtent(map.getSize());
+      //   var bottomLeft = ol.proj.transform(ol.extent.getBottomLeft(extent),
+      //       'EPSG:3857', 'EPSG:4326');
+      //   var topRight = ol.proj.transform(ol.extent.getTopRight(extent),
+      //       'EPSG:3857', 'EPSG:4326');
+        // console.log(bottomLeft[0])
+        // console.log(wrapLon(bottomLeft[1]))
+        // console.log(topRight[0])
+        // console.log(wrapLon(topRight[1]))
+      // });
+
+      // map.on('pointermove', function (e) {
+      //   const pixel = map.getEventPixel(e.originalEvent);
+      //   const hit = map.hasFeatureAtPixel(pixel);
+      //   map.getTarget().style.cursor = hit ? 'pointer' : '';
+      // });
+      // Close the popup when the map is moved
+      // map.on('movestart', function () {
+      //   $(element).popover('dispose');
+      // });
+      
+      let dragAndDropInteraction;
+      function setInteraction() {
+        if (dragAndDropInteraction) {
+          map.removeInteraction(dragAndDropInteraction);
         }
-        setInteraction();
-
-
-        const displayFeatureInfo = function (pixel) {
-          const features = [];
-          map.forEachFeatureAtPixel(pixel, function (feature) {
-            features.push(feature);
+        dragAndDropInteraction = new ol.interaction.DragAndDrop({
+          formatConstructors: [
+            ol.format.GeoJSON,
+          ],
+        });
+        dragAndDropInteraction.on('addfeatures', function (event) {
+          const vectorSource = new ol.source.Vector({
+            features: event.features,
           });
-          if (features.length > 0) {
-            const info = [];
-            let i, ii;
-            
-            for (i = 0, ii = features.length; i < ii; ++i) {
-              info.push(features[i].get('name'));
-            }
-            document.getElementById('info').innerHTML = info.join(', ') || '&nbsp';
-          } else {
-            document.getElementById('info').innerHTML = '&nbsp;';
-          }
-        };
+          new_features = new ol.layer.Vector({
+              source: vectorSource,
+            });
+          feature_layer_list.push(new_features)
+          map.addLayer(
+            new_features
+          );
+          map.getView().fit(vectorSource.getExtent());
+          
+        });
+        map.addInteraction(dragAndDropInteraction);
+      }
+      setInteraction();
+
     </script>
   </body>
 </html>
