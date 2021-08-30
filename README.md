@@ -14,11 +14,11 @@ Download this repository and run the command below to start the server
 uvicorn server:app --reload --port 8080
 ```
 
-Then open http://localhost:8080/ using browser
+Then open http://localhost:8080/ using browser to complete authentication
 
 Operation:
-1. Drag-and-drop to render geojson on the map
-2. Click on the map to get panoramic image from Mapillary
+- Drag-and-drop to render geojson on the map
+- Click on the map to get panoramic image from Mapillary
 
 ## Test Environment
 Windows 10
