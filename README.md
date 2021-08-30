@@ -1,4 +1,4 @@
-# Mapillary-Analysis-Tool
+# Mapillary-Image-Tool
 
 ## Prerequisites
 - Python3
