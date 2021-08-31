@@ -158,12 +158,13 @@
           viewer.addScene(String(index), {
                 "type": "equirectangular",
                 "panorama": item['img_url'],
-                // "compass": true,
+                "compass": true,
                 "showControls": false,
-                // "northOffset": item['properties']['compass_angle'],
-                'yaw': item['degree'],
+                "northOffset": ((item['properties']['compass_angle'])),
+                'yaw': ((item['degree'] - item['properties']['compass_angle'])) ,
                 "hfov": 120
               })
+            console.log(item['degree'], item['properties']['compass_angle']);
             scene_ids.push(String(index))
         });
       }

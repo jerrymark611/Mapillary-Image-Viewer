@@ -51,7 +51,7 @@ def getDegree(lon1, lat1, lon2, lat2):
     return brng  
 
 
-def find_closest_point(access_token: str, lon, lat):
+def find_closest_point(access_token: str, lon, lat, radius):
     tile_coverage = 'mly1_public'
     tile_layer = "image"
     output= { "type": "FeatureCollection", "features": [] } 
@@ -71,10 +71,10 @@ def find_closest_point(access_token: str, lon, lat):
             lon2, lat2 = feature['geometry']['coordinates']
             distance = haversine(lon, lat, lon2, lat2)
             # get panoramic images of distance less than 50 meters
-            if distance < 100 and  feature['properties']['is_pano']:
+            if distance < radius and  feature['properties']['is_pano']:
                 image_url = request_image(access_token,  feature['properties']['id'])
                 feature['img_url'] = image_url
-                feature['degree'] = getDegree(lon, lat, lon2, lat2)
+                feature['degree'] = getDegree(lon2, lat2, lon, lat)
                 output['features'].append(feature)
     with open('data/images.geojson', 'w') as f:
         json.dump(output, f)

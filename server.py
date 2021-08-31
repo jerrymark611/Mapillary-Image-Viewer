@@ -6,8 +6,9 @@ from starlette.responses import RedirectResponse
 from query import *
 
 # %%
-client_secret = <CLIENT-SECRET>
-client_id = <CLIENT-ID>
+client_secret = "MLY|4996748710342229|df37ea75c385590184f067f78962be3a"
+client_id = "4996748710342229"
+radius = 100
 
 app = FastAPI()
 templates = Jinja2Templates(directory=".")
@@ -47,7 +48,7 @@ async def root(request: Request, code: str = None, old_access_token: str = None)
 # 
 @app.get("/api")
 def api(lon: float, lat: float, access_token: str):
-    return find_closest_point(access_token, lon, lat)
+    return find_closest_point(access_token, lon, lat, radius)
 
 # start the server
-# uvicorn server:app --reload --port 8080
+# `uvicorn server:app --reload --port 8080`
